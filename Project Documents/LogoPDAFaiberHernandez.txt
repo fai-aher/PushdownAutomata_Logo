@@ -1,0 +1,318 @@
+/*
+ * Desarrollo del Quiz Practico 4
+ * Estudiante: Faiber Alonso Hernandez Tavera
+ * Github: @fai-aher
+ *  
+ * Este desarrollo se enfoca en construir un automata de pila (PDA) con la finalidad de reconocer el
+ * lenguaje de programacion logo.
+ * 
+ * Consideraciones para el proyecto:
+ * 
+ * 1. Se asume que cada instruccion ha sido tokenizada y, por tanto, se representan con solo una letra.
+ * 	La convencion que se utilizara para estos tokens es la siguiente:
+ * 
+ * 	FORWARD: f
+ * 	RIGHT: r
+ * 	LEFT: l (L minuscula)
+ * 	REPEAT: t
+ * 	PENUP: u
+ * 	PENDOWN: d
+ * 	(Numeros) : n
+ * 
+ * 2. El conjunto de simbolos que conforman los input (Î£) que va leyendo el parser incluye los elementos de sintaxis:
+ * 	[ , ] , '.', ' '. AdemÃ¡s de todos lo anteriores tokens y los digitos (0 a 9).
+ * 
+ * 3. El conjunto de estados del automata son Q:={"I","A","AD","AF","AR","AL","AU","AT","ATA"} donde I es el estado inicial (q0)), A es un estado intermedio desde donde
+ * 	se redirige el estado actual de la maquina de acuerdo a la instruccion leida y los demas estados estan asignados a cada instruccion de la siguiente forma:
+ * 
+ * 	AD: corresponde al estado al que se llega cuando se lee 'd' de PENDOWN
+ * 	AF: corresponde al estado al que se llega cuando se lee 'f' de FORWARD
+ * 	AR: corresponde al estado al que se llega cuando se lee 'r' de RIGHT
+ * 	AL: corresponde al estado al que se llega cuando se lee 'l' de LEFT
+ * 	AU: corresponde al estado al que se llega cuando se lee 'u' de PENUP
+ * 	ATA: corresponde al estado especial al que se llega cuando se lee un corchete de cierre ']', permite revisar la terminacion de
+ * 		la instruccion REPEAT y aceptarla o no.
+ * 
+ * 4. Los estados finales corresponden a todos los estados excepto el inicial: F:={"AD","AF","AR","AL","AU","AT","ATA"}
+ * 	
+ * 5. Cada instruccion se considera completa y correcta cuando acaba en un punto y para cada instruccion, se tuvieron en cuenta las indicaciones
+ * 	dadas en el documento de enunciado.
+ * 
+ * 
+ * 
+ */
+ 
+using gold.structures.automaton.*
+using gold.visualization.automaton.*
+
+procedure main(args:String[]) begin
+	
+	Q:={"I","A","AD","AF","AR","AL","AU","AT","ATA"} //ATA es el estado de aceptacion para REPEAT
+	Î£:={'f','r','l','t','[',']','.',' ','u','d','0','1','2','3','4','5','6','7','8','9'}
+	Î“:={'$','S','d','x','f','n','r','l','u','t',']','['}
+	qâ‚€:="I"
+	F:={"AD","AF","AR","AL","AU","AT","ATA"}
+	
+	M:=GPushdownAutomaton(Q,Î£,Î“,qâ‚€,F)
+	
+	//////////////////////Definicion de transiciones///////////////////////////
+	
+	//Transiciones iniciales
+	M.delta("I","A","").push("$")
+	M.delta("A","A"," ").changeTop("$","$")
+	M.delta("A","A","").changeTop("$","$") //A es el estado que redirije a los estados que pueden iniciar el programa (REPEAT[]] y PENDOWN.)
+	
+	
+	//Lecturas iniciales
+	M.delta("A","AF","f").changeTop("$","Sfn")
+	M.delta("A","AR","r").changeTop("$","Srn")
+	M.delta("A","AL","l").changeTop("$","Sln")
+	M.delta("A","AU","u").changeTop("$","Su")
+	
+	
+	
+	
+	
+	//Si INICIAL lee d de PENDOWN
+	M.delta("A","AD","d").changeTop("$","Sd")
+	M.delta("AD","AD",".").pop("d")
+	M.delta("AD","AD",' ').changeTop("S","S")
+	M.delta("AD","AD",' ').changeTop("Sd","Sd")
+	M.delta("AD","AD","").pop("S") //Si no hay mas inputs
+	
+	M.delta("AD","ATA",']').pop("S") //Para aceptar el ] de REPEAT
+	
+	//PENDOWN Si lee otra instruccion	
+	M.delta("AD","AD","d").changeTop("S","Sd") //Si lee otra vez pendown d
+	M.delta("AD","AF","f").changeTop("S","Sfn") // Si lee forward f
+	M.delta("AD","AR","r").changeTop("S","Srn")	 //Si lee right r
+	M.delta("AD","AL",'l').changeTop("S","Sln") //si lee left l
+	M.delta("AD","AU",'u').changeTop("S","Su") //si lee penup u
+	M.delta("AD","AT",'t').changeTop("S","Stn[]") //si lee REPEAT t
+	
+	
+	
+	//SI INICIAL lee t de REPEAT
+	M.delta("A","AT","t").changeTop("$","Stn[]")
+	
+	//Numero de repeticiones
+	M.delta("AT","AT",'0').changeTop("Stn[]","St[]")
+	M.delta("AT","AT",'1').changeTop("Stn[]","St[]")
+	M.delta("AT","AT",'2').changeTop("Stn[]","St[]")
+	M.delta("AT","AT",'3').changeTop("Stn[]","St[]")
+	M.delta("AT","AT",'4').changeTop("Stn[]","St[]")
+	M.delta("AT","AT",'5').changeTop("Stn[]","St[]")
+	M.delta("AT","AT",'6').changeTop("Stn[]","St[]")
+	M.delta("AT","AT",'7').changeTop("Stn[]","St[]")
+	M.delta("AT","AT",'8').changeTop("Stn[]","St[]") 
+	M.delta("AT","AT",'9').changeTop("Stn[]","St[]")
+	
+	M.delta("AT","AT",'0').pop("")
+	M.delta("AT","AT",'1').pop("")
+	M.delta("AT","AT",'2').pop("")
+	M.delta("AT","AT",'3').pop("")
+	M.delta("AT","AT",'4').pop("")
+	M.delta("AT","AT",'5').pop("")
+	M.delta("AT","AT",'6').pop("")
+	M.delta("AT","AT",'7').pop("")
+	M.delta("AT","AT",'8').pop("")
+	M.delta("AT","AT",'9').pop("")
+	
+	//Si lee el parentesis
+	M.delta("AT","AT",'[').changeTop("St[]","St]")
+
+	
+	// Espacios en blanco
+	M.delta("AT","AT",' ').changeTop("Stn[]","Stn[]")
+	M.delta("AT","AT",' ').changeTop("St[]","St[]")
+	M.delta("AT","AT",' ').changeTop("St]","St]")
+	
+	M.delta("AT","ATA",']').changeTop("St]","]") //REPEAT vacio
+	
+	
+	//Para instrucciones dentro de REPEAT
+	M.delta("AT","AD","d").changeTop("St]","]Sd") //Si lee pendown d
+	M.delta("AT","AF","f").changeTop("St]","]Sfn") // Si lee forward f
+	M.delta("AT","AR","r").changeTop("St]","]Srn")	 //Si lee right r
+	M.delta("AT","AL",'l').changeTop("St]","]Sln") //si lee left l
+	M.delta("AT","AU",'u').changeTop("St]","]Su") //si lee penup u
+	M.delta("AT","AT",'t').changeTop("St]","]Stn[]") //si lee REPEAT t
+	
+	M.delta("AT","ATA",']').changeTop("]St]","]") //Para aceptar el ] de REPEAT
+	
+	M.delta("AT","AT",'t').changeTop("St]","]Stn[]") //si lee REPEAT t otra vez
+	
+	
+	//En el estado de aceptacion ATA
+	M.delta("ATA","ATA",' ').changeTop("]","]")
+	M.delta("ATA","ATA",'.').changeTop("]","S")
+	M.delta("ATA","ATA"," ").changeTop("S","S")
+	M.delta("ATA","ATA","").pop("S") //acepta si no hay nada mas
+	M.delta("ATA","ATA","]").pop("S")
+	
+	M.delta("ATA","ATA",' ').changeTop("S","S")
+	
+	M.delta("ATA","ATA","]").changeTop("S","]")
+	M.delta("ATA","AD","d").changeTop("S","Sd") //Si lee pendown d
+	M.delta("ATA","AF","f").changeTop("S","Sfn") // Si lee forward f
+	M.delta("ATA","AR","r").changeTop("S","Srn")	 //Si lee right r
+	M.delta("ATA","AL",'l').changeTop("S","Sln") //si lee left l
+	M.delta("ATA","AU",'u').changeTop("S","Su") //si lee penup u
+	M.delta("ATA","AT",'t').changeTop("S","Stn[]") //si lee REPEAT t
+
+	/////////////////////////////////////ESTADOS///////////////////////////////////////////////
+
+	//ESTADO FORWARD f
+	//lectura de numeros para FORWARD
+	M.delta("AF","AF",'0').pop("n")
+	M.delta("AF","AF",'1').pop("n")
+	M.delta("AF","AF",'2').pop("n")
+	M.delta("AF","AF",'3').pop("n")
+	M.delta("AF","AF",'4').pop("n")
+	M.delta("AF","AF",'5').pop("n")
+	M.delta("AF","AF",'6').pop("n")
+	M.delta("AF","AF",'7').pop("n")
+	M.delta("AF","AF",'8').pop("n")
+	M.delta("AF","AF",'9').pop("n")
+	
+	M.delta("AF","AF",'0').pop("")
+	M.delta("AF","AF",'1').pop("")
+	M.delta("AF","AF",'2').pop("")
+	M.delta("AF","AF",'3').pop("")
+	M.delta("AF","AF",'4').pop("")
+	M.delta("AF","AF",'5').pop("")
+	M.delta("AF","AF",'6').pop("")
+	M.delta("AF","AF",'7').pop("")
+	M.delta("AF","AF",'8').pop("")
+	M.delta("AF","AF",'9').pop("")
+	
+	M.delta("AF","AF",' ').changeTop("Sf","Sf")
+	M.delta("AF","AF",' ').changeTop("Sfn","Sfn")
+	M.delta("AF","AF",'.').changeTop("Sf","S")
+	M.delta("AF","AF",' ').changeTop("S","S")
+	M.delta("AF","AF","").pop("S") //Si no hay nada mas, se termina y acepta
+	
+	M.delta("AF","ATA",']').pop("S") //Para aceptar el ] de REPEAT
+	
+	//Si FORWARD lee otra instruccion
+	
+	M.delta("AF","AR",'r').changeTop("S","Srn") //si lee right r
+	M.delta("AF","AD",'d').changeTop("S","Sd") // si lee pendown d
+	M.delta("AF","AF",'f').changeTop("S","Sfn") // si lee forward f
+	M.delta("AF","AL",'l').changeTop("S","Sln") //si lee left l
+	M.delta("AF","AU",'u').changeTop("S","Su") //si lee penup u
+	M.delta("AF","AT",'t').changeTop("S","Stn[]") //si lee REPEAT t
+	
+	
+	
+	
+	//ESTADO RIGHT r
+	M.delta("AR","AR",'0').pop("n")
+	M.delta("AR","AR",'1').pop("n")
+	M.delta("AR","AR",'2').pop("n")
+	M.delta("AR","AR",'3').pop("n")
+	M.delta("AR","AR",'4').pop("n")
+	M.delta("AR","AR",'5').pop("n")
+	M.delta("AR","AR",'6').pop("n")
+	M.delta("AR","AR",'7').pop("n")
+	M.delta("AR","AR",'8').pop("n")
+	M.delta("AR","AR",'9').pop("n")
+	
+	M.delta("AR","AR",'0').pop("")
+	M.delta("AR","AR",'1').pop("")
+	M.delta("AR","AR",'2').pop("")
+	M.delta("AR","AR",'3').pop("")
+	M.delta("AR","AR",'4').pop("")
+	M.delta("AR","AR",'5').pop("")
+	M.delta("AR","AR",'6').pop("")
+	M.delta("AR","AR",'7').pop("")
+	M.delta("AR","AR",'8').pop("")
+	M.delta("AR","AR",'9').pop("")
+	
+	M.delta("AR","AR",' ').changeTop("Sr","Sr")
+	M.delta("AR","AR",' ').changeTop("Srn","Srn")
+	M.delta("AR","AR",'.').changeTop("Sr","S")
+	M.delta("AR","AR",' ').changeTop("S","S")
+	M.delta("AR","AR","").pop("S") //Si no hay nada mas, se termina y acepta
+	
+	
+	M.delta("AR","ATA",']').pop("S") //Para aceptar el ] de REPEAT
+	
+	//Si RIGHT lee otra instruccion
+	
+	M.delta("AR","AR",'r').changeTop("S","Srn") //si lee right r
+	M.delta("AR","AD",'d').changeTop("S","Sd") // si lee pendown d
+	M.delta("AR","AF",'f').changeTop("S","Sfn") // si lee forward f
+	M.delta("AR","AL",'l').changeTop("S","Sln") //si lee left l
+	M.delta("AR","AU",'u').changeTop("S","Su") //si lee penup u
+	M.delta("AR","AT",'t').changeTop("S","Stn[]") //si lee REPEAT t
+	
+	
+	
+	//ESTADO LEFT l
+	M.delta("AL","AL",'0').pop("n")
+	M.delta("AL","AL",'1').pop("n")
+	M.delta("AL","AL",'2').pop("n")
+	M.delta("AL","AL",'3').pop("n")
+	M.delta("AL","AL",'4').pop("n")
+	M.delta("AL","AL",'5').pop("n")
+	M.delta("AL","AL",'6').pop("n")
+	M.delta("AL","AL",'7').pop("n")
+	M.delta("AL","AL",'8').pop("n")
+	M.delta("AL","AL",'9').pop("n")
+	
+	M.delta("AL","AL",'0').pop("")
+	M.delta("AL","AL",'1').pop("")
+	M.delta("AL","AL",'2').pop("")
+	M.delta("AL","AL",'3').pop("")
+	M.delta("AL","AL",'4').pop("")
+	M.delta("AL","AL",'5').pop("")
+	M.delta("AL","AL",'6').pop("")
+	M.delta("AL","AL",'7').pop("")
+	M.delta("AL","AL",'8').pop("")
+	M.delta("AL","AL",'9').pop("")
+	
+	M.delta("AL","AL",' ').changeTop("Sl","Sl")
+	M.delta("AL","AL",' ').changeTop("Sln","Sln")
+	M.delta("AL","AL",'.').changeTop("Sl","S")
+	M.delta("AL","AL",' ').changeTop("S","S")
+	M.delta("AL","AL","").pop("S") //Si no hay nada mas, se termina y acepta
+	
+	M.delta("AL","ATA",']').pop("S") //Para aceptar el ] de REPEAT
+	
+	//Si LEFT lee otra instruccion
+	
+	M.delta("AL","AL",'l').changeTop("S","Sln") //si lee left l
+	M.delta("AL","AR",'r').changeTop("S","Srn") //si lee right r
+	M.delta("AL","AD",'d').changeTop("S","Sd") // si lee pendown d
+	M.delta("AL","AF",'f').changeTop("S","Sfn") // si lee forward f
+	M.delta("AL","AU",'u').changeTop("S","Su") //si lee penup u
+	M.delta("AL","AT",'t').changeTop("S","Stn[]") //si lee REPEAT t
+	
+	
+	//ESTADO PENUP. u.
+	
+	M.delta("AU","AU",' ').changeTop("Su","Su")
+	M.delta("AU","AU",'.').changeTop("Su","S")
+	M.delta("AU","AU",' ').changeTop("S","S")
+	M.delta("AU","AU","").pop("S") //Si no hay nada mas, se termina y acepta
+	
+	M.delta("AU","ATA",']').pop("S") //Para aceptar el ] de REPEAT
+	
+	//Si PENUP lee otra instruccion
+	M.delta("AU","AU",'u').changeTop("S","Su") //si lee penup u
+	M.delta("AU","AL",'l').changeTop("S","Sln") //si lee left l
+	M.delta("AU","AR",'r').changeTop("S","Srn") //si lee right r
+	M.delta("AU","AD",'d').changeTop("S","Sd") // si lee pendown d
+	M.delta("AU","AF",'f').changeTop("S","Sfn") // si lee forward f
+	M.delta("AU","AT",'t').changeTop("S","Stn[]") //si lee REPEAT t
+	
+	
+	GAutomataFrame.show(M)
+	
+	
+	print "El automata se ha ejecutado."
+	
+	
+	
+end
